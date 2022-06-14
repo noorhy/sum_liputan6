@@ -17,9 +17,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 MAX_SENTENCE = 100
 
 def get_string(sentences):
-    all_sentence = []
-    for sentence in sentences:
-        all_sentence.append(' '.join(sentence))
+    all_sentence = [' '.join(sentence) for sentence in sentences]
     return ' '.join(all_sentence).lower()
 
 def harmonic_mean(precision, recall):
@@ -63,11 +61,11 @@ def find_label(fname):
         cur_id = idx
         global_best = None
         ids = [cur_id]
-        while (True):
+        while True:
             cur_score = {}
             next_list = get_list(ids, len(article))
             if len(next_list) == 0:
-                if global_best is not None and len(temp_result) == 0:
+                if global_best is not None and not temp_result:
                     temp_result.append(global_best)
                 break
             for idy in next_list:
@@ -77,16 +75,15 @@ def find_label(fname):
             # sort by value 
             cur_best = sorted(cur_score, key=cur_score.get, reverse=True)[0]
             cur_best_array = np.fromstring(cur_best, dtype=int)
-            if global_best is None:
+            if (
+                global_best is not None
+                and global_best[1] > cur_score[cur_best]
+            ): #stop
+                temp_result.append(global_best)
+                break
+            else:
                 global_best = (cur_best_array, cur_score[cur_best])
                 ids = list(cur_best_array)
-            else:
-                if global_best[1] > cur_score[cur_best]: #stop
-                    temp_result.append(global_best)
-                    break
-                else:
-                    global_best = (cur_best_array, cur_score[cur_best])
-                    ids = list(cur_best_array)
     try:
         data['extractive_summary'] = sorted(temp_result, key=lambda tup: tup[1], reverse=True)[0][0].tolist()
     except:
@@ -123,8 +120,8 @@ def proceed(source_path, num_thread):
 THREADS = 20
 source_path = 'data/clean/'
 print("Working on All Files, Wait for 10-15 mins")
-proceed(source_path+'train/*', THREADS)
-proceed(source_path+'test/*', THREADS)
-proceed(source_path+'dev/*', THREADS)
+proceed(f'{source_path}train/*', THREADS)
+proceed(f'{source_path}test/*', THREADS)
+proceed(f'{source_path}dev/*', THREADS)
 
 

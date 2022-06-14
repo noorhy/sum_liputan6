@@ -16,10 +16,10 @@ SENTENCE_END = '</s>'
 main_path = 'data/clean/'
 data_path = 'data/pointer_generator/'
 os.mkdir(data_path)
-chunks_dir = data_path + 'finished_files/'
+chunks_dir = f'{data_path}finished_files/'
 
 def chunk_file(set_name):
-    in_file = data_path+'%s.bin' % set_name
+    in_file = data_path + f'{set_name}.bin'
     reader = open(in_file, "rb")
     chunk = 0
     finished = False
@@ -38,13 +38,16 @@ def chunk_file(set_name):
             chunk += 1
 
 def get_string(sentences, is_article=True):
-    all_sentence = []
-    for sentence in sentences:
-        all_sentence.append(' '.join(sentence))
+    all_sentence = [' '.join(sentence) for sentence in sentences]
     if is_article:
         return ' '.join(all_sentence).lower()
     else:
-        return ' '.join(["%s %s %s" % (SENTENCE_START, sent, SENTENCE_END) for sent in all_sentence]).lower()
+        return ' '.join(
+            [
+                f"{SENTENCE_START} {sent} {SENTENCE_END}"
+                for sent in all_sentence
+            ]
+        ).lower()
 
 def chunk_all():
     # Make a dir to hold the chunks
@@ -53,9 +56,9 @@ def chunk_all():
     # Chunk the data
     for set_name in ['train', 'val', 'test']:
     # for set_name in ['val', 'test']:
-        print ("Splitting %s data into chunks..." % set_name)
+        print(f"Splitting {set_name} data into chunks...")
         chunk_file(set_name)
-    print ("Saved chunked data in %s" % chunks_dir)
+    print(f"Saved chunked data in {chunks_dir}")
 
 
 def write_to_bin(in_folder, out_file, makevocab=False):
@@ -63,13 +66,13 @@ def write_to_bin(in_folder, out_file, makevocab=False):
         vocab_counter = collections.Counter()
     files = glob.glob(in_folder)
     counter = 0
-    
+
     with open(out_file, 'wb') as writer:
         for file in files:
             data = json.loads(open(file, 'r').readline())
             article = get_string(data['clean_article'])
             abstract = get_string(data['clean_summary'], is_article=False)
-            
+
             # Write to tf.Example
             tf_example = example_pb2.Example()
             tf_example.features.feature['article'].bytes_list.value.extend([article.encode()])
@@ -78,7 +81,7 @@ def write_to_bin(in_folder, out_file, makevocab=False):
             str_len = len(tf_example_str)
             writer.write(struct.pack('q', str_len))
             writer.write(struct.pack('%ds' % str_len, tf_example_str))
-            
+
             # Write the vocab to file, if applicable
             if makevocab:
                 art_tokens = article.split(' ')
@@ -89,18 +92,18 @@ def write_to_bin(in_folder, out_file, makevocab=False):
                 tokens = [t for t in tokens if t!=""] # remove empty
                 vocab_counter.update(tokens)
 
-    print ("Finished writing file %s" % out_file)
+    print(f"Finished writing file {out_file}")
 
     # write vocab to file
     if makevocab:
         print ("Writing vocab file...")
-        with open(data_path+"vocab", 'w') as writer:
+        with open(f"{data_path}vocab", 'w') as writer:
             for word, count in vocab_counter.most_common(VOCAB_SIZE):
-                writer.write(word + ' ' + str(count) + '\n')
+                writer.write(f'{word} {str(count)}' + '\n')
         print ("Finished writing vocab file")
 
 
-write_to_bin(main_path+'train/*', data_path+'train.bin', makevocab=True)
-write_to_bin(main_path+'dev/*', data_path+'val.bin')
-write_to_bin(main_path+'test/*', data_path+'test.bin')
+write_to_bin(f'{main_path}train/*', f'{data_path}train.bin', makevocab=True)
+write_to_bin(f'{main_path}dev/*', f'{data_path}val.bin')
+write_to_bin(f'{main_path}test/*', f'{data_path}test.bin')
 chunk_all()
