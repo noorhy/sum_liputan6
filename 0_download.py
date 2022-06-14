@@ -13,11 +13,15 @@ def get_id(url):
     return url.split('/')[-2]
 
 def get_summary(text):
-    target = ''
-    for line in text.split('\n'):
-        if 'window.kmklabs.channel =' in line:
-            target = line
-            break
+    target = next(
+        (
+            line
+            for line in text.split('\n')
+            if 'window.kmklabs.channel =' in line
+        ),
+        '',
+    )
+
     temp=target.split('window.kmklabs.article = ')[1]
     temp=temp.split(';')[0]
     data = json.loads(temp)
@@ -27,21 +31,20 @@ def extract_data(text):
     soup = BeautifulSoup(text)
     title = soup.findAll('title')[0].getText().replace(' - News Liputan6.com', '')
     date = soup.findAll('time', {'class': 'read-page--header--author__datetime updated'})[0].getText()
-    article = []
     contents = soup.findAll('div', {'class': 'article-content-body__item-content'})
-    for content in contents:
-        article.append(content.getText())
+    article = [content.getText() for content in contents]
     summary = get_summary(text)
     return title, date, article, summary
 
 def write_file(id, url, title, date, content, summary, target_path):
-    json_dict = {}
-    json_dict['id']=id
-    json_dict['url']=url
-    json_dict['title']=title
-    json_dict['date']=date
-    json_dict['content']='\n'.join(content)
-    json_dict['summary']=summary
+    json_dict = {
+        'id': id,
+        'url': url,
+        'title': title,
+        'date': date,
+        'content': '\n'.join(content),
+        'summary': summary,
+    }
 
     with open(f"{target_path}/{id}.json", 'w') as json_file:
         json.dump(json_dict, json_file)

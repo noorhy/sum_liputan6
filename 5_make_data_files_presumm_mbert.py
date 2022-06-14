@@ -49,7 +49,7 @@ class BertData():
             return None
 
         src_txt = [' '.join(sent) for sent in src]
-        text = ' {} {} '.format(self.sep_token, self.cls_token).join(src_txt)
+        text = f' {self.sep_token} {self.cls_token} '.join(src_txt)
 
         src_subtokens = self.tokenizer.tokenize(text)
 
@@ -59,10 +59,7 @@ class BertData():
         segs = [_segs[i] - _segs[i - 1] for i in range(1, len(_segs))]
         segments_ids = []
         for i, s in enumerate(segs):
-            if (i % 2 == 0):
-                segments_ids += s * [0]
-            else:
-                segments_ids += s * [1]
+            segments_ids += s * [0] if (i % 2 == 0) else s * [1]
         cls_ids = [i for i, t in enumerate(src_subtoken_idxs) if t == self.cls_vid]
         sent_labels = sent_labels[:len(cls_ids)]
 
@@ -113,6 +110,6 @@ def format_to_bert(path):
 if os.path.exists(data_path):
     shutil.rmtree(data_path)
 os.mkdir(data_path)
-format_to_bert(main_path + 'train/*')
-format_to_bert(main_path + 'dev/*')
-format_to_bert(main_path + 'test/*')
+format_to_bert(f'{main_path}train/*')
+format_to_bert(f'{main_path}dev/*')
+format_to_bert(f'{main_path}test/*')
